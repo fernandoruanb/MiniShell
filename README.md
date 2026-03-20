@@ -45,9 +45,6 @@
 <p align="center">
   <img src="./assets/minishell_demo.gif" alt="Minishell demo">
 </p>
-  <p align="center">
-      <img src="https://raw.githubusercontent.com/oJonasRtz/oJonasRtz/main/assets/video/minishell_demo.gif" width="100%" alt="Minishell demo GIF">
-      </p>
 <p align="center">
   <sub>Illustrative Minishell demo designed by <a href="https://github.com/oJonasRtz/">oJonasRtz</a></sub>
 </p>
