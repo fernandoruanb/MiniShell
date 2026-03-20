@@ -149,6 +149,175 @@ A shell cannot afford to leave broken file descriptors, corrupted signal behavio
 
 That is why structure is so important here.
 
+
+
+To make the shell reliable, the project was structured around a clear lifecycle and a staged execution pipeline.
+
+### General Architecture
+
+```mermaid
+flowchart TD
+
+    A[Create] --> B[Execute]
+    B --> C[Destroy]
+
+    subgraph CREATE_STAGE["Create Stage"]
+        direction LR
+        A1["init_data()"] --> A2["allocate prompt struct"]
+        A2 --> A3["initialize variables"]
+        A3 --> A4["export_init(envp)"]
+        A4 --> A5["setup environment"]
+    end
+
+    subgraph EXECUTE_STAGE["Execute Stage"]
+        direction LR
+        B1["display_prompt loop"] --> B2["readline()"]
+        B2 --> B3["handle_space()"]
+        B3 --> B4["add_history()"]
+        B4 --> B5["analysis()"]
+
+        B5 --> B6["updateenvp()"]
+        B6 --> B7["lexer()"]
+        B7 --> B8["check_syntax()"]
+        B8 --> B9["make_ast()"]
+        B9 --> B10["minishell executor"]
+    end
+
+    subgraph DESTROY_STAGE["Destroy Stage"]
+        direction LR
+        C1["export_clean()"] --> C2["clean_locals()"]
+        C2 --> C3["free prompt/input"]
+        C3 --> C4["reset pointers"]
+        C4 --> C5["exit()"]
+    end
+
+    A --> A1
+    B --> B1
+    C --> C1
+````
+
+The shell processes commands through multiple stages before execution is allowed to happen.
+
+```mermaid
+flowchart TD
+    A[User Input] --> B[Lexer]
+    B --> C[Syntax Analyzer]
+    C --> D[AST Builder]
+    D --> E[Executor]
+```
+
+This structure was essential because **Minishell** is not just a launcher of commands.
+It must first understand the input, validate it, organize execution priority, and only then perform the correct shell behavior.
+
+
+
+## Program Lifecycle
+
+At a high level, the shell follows a simple lifecycle:
+
+```mermaid
+flowchart TD
+    A["main()"] --> B["create()"]
+    B --> C["execute()"]
+    C --> D["destroy()"]
+````
+
+### Main
+
+Initializes the shell instance and installs the signal handlers.
+
+### Create
+
+Responsible for initializing the shell state.
+
+```text
+init_data() -> setup environment
+```
+
+After initialization, control is transferred to the execution loop.
+
+### Execute
+
+Handles the main shell loop.
+
+```mermaid
+flowchart TD
+    A["display_prompt()"] --> B["analysis()"]
+    B --> C["command execution"]
+```
+
+Each user command goes through the full parsing and execution pipeline before the shell returns to the prompt.
+
+
+
+---
+
+## Execution, Pipes, Redirects and Heredoc
+
+Once the input has been tokenized and validated, the shell moves into execution planning.
+
+Commands are executed using an **AST-based execution model**, which helps organize priority between pipes, redirects, heredocs, and command execution itself.
+
+For example:
+
+```bash
+ls -l | grep minishell > out.txt
+```
+
+AST representation:
+
+```mermaid
+graph TD
+    PIPE --> CMD1[CMD: ls -l]
+    PIPE --> REDIR[REDIR: > out.txt]
+    REDIR --> CMD2[CMD: grep minishell]
+```
+
+This kind of structure helps make execution order explicit and much easier to reason about.
+
+Pipes were one of the parts I worked on directly.
+
+Before reaching the final **Minishell** implementation, I had already built a **Pipex**, which gave me the foundation to understand process chaining, file descriptor redirection, and the flow of data between commands.
+
+That previous experience was essential, but in **Minishell** I went further:
+I created multiple small **laboratories** to isolate and study pipe behavior in controlled scenarios, which helped me understand and solve the full execution flow of pipelines inside our shell.
+
+This experimental approach was fundamental for making the pipeline logic reliable.
+
+Another key tool in this process was **GDB**.
+
+Using the debugger was critical to inspect process creation, follow descriptor duplication, observe execution order, and verify exactly how each command interacted with the others inside a pipeline.
+
+### Redirection Handling
+
+Redirections are detected and applied before command execution.
+
+Supported operators:
+
+```text
+Redirect out: >
+Append: >>
+Redirect in: <
+Heredoc: <<
+```
+
+Redirections are processed by `manage_redir()`, which:
+
+* scans the tokens related to the command
+* opens the required file descriptors
+* applies them using `dup2()`
+* restores the original descriptors after execution
+
+```mermaid
+flowchart TD
+    A["save_origin()<br/>save STDIN and STDOUT"] --> B["manage_redir()"]
+    B --> C["apply redirects"]
+    C --> D["execute command"]
+    D --> E["restore_redirect()<br/>restore STDIN and STDOUT"]
+```
+
+This restoration step is essential, because one command must never permanently corrupt the interactive shell session.
+
 ---
 
 ## Lexer
