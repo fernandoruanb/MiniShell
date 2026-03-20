@@ -5,7 +5,7 @@
 
 <h1 align="center">
   <a href="https://github.com/fernandoruanb/minishell">
-    <img src="https://github.com/ayogun/42-project-badges/raw/main/badges/minishelle.png" alt="Minishell badge" width="200">
+    <img src="https://github.com/ayogun/42-project-badges/raw/main/badges/minishelle.png" alt="Minishell badge" width="100%">
   </a>
   <br>
   Minishell
