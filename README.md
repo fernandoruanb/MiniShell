@@ -5,7 +5,7 @@
 
 <h1 align="center">
   <a href="https://github.com/fernandoruanb/minishell">
-    <img src="https://github.com/ayogun/42-project-badges/raw/main/badges/minishelle.png" alt="Minishell badge" width="100%">
+    <img src="https://github.com/ayogun/42-project-badges/raw/main/badges/minishelle.png" alt="Minishell badge" width="200">
   </a>
   <br>
   Minishell
@@ -43,7 +43,7 @@
 
 <html>
 <p align="center">
-  <img src="./assets/minishell_demo.gif" alt="Minishell demo">
+  <img src="./assets/minishell_demo.gif" alt="Minishell demo" width="100%">
 </p>
 <p align="center">
   <sub>Illustrative Minishell demo designed by <a href="https://github.com/oJonasRtz/">oJonasRtz</a></sub>
